@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lake Color Map</title>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        .color-picker {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="color-picker">
+        <h3>Lake Color Tool</h3>
+        <select id="lake-selector">
+            <option value="">Select a lake</option>
+        </select>
+        <input type="color" id="color-picker" value="#0000FF">
+        <button id="apply-color">Apply Color</button>
+    </div>
+
+    <script>
+        let map;
+        let lakes = {};
+        let lakePolygons = {};
+
+        function initMap() {
+            // Center on North America
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 4,
+                center: { lat: 45.0, lng: -90.0 },
+            });
+
+            // Load lakes data
+            fetch('/get_lakes')
+                .then(response => response.json())
+                .then(data => {
+                    lakes = data;
+                    renderLakes();
+                    populateLakeSelector();
+                });
+        }
+
+        function renderLakes() {
+            for (const [id, lake] of Object.entries(lakes)) {
+                const coordinates = lake.coordinates.map(coord => {
+                    return { lat: coord[0], lng: coord[1] };
+                });
+
+                lakePolygons[id] = new google.maps.Polygon({
+                    paths: coordinates,
+                    strokeColor: lake.color,
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: lake.color,
+                    fillOpacity: 0.35,
+                    map: map
+                });
+            }
+        }
+
+        function populateLakeSelector() {
+            const selector = document.getElementById('lake-selector');
+            for (const [id, lake] of Object.entries(lakes)) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = lake.name;
+                selector.appendChild(option);
+            }
+        }
+
+        document.getElementById('apply-color').addEventListener('click', () => {
+            const lakeId = document.getElementById('lake-selector').value;
+            const color = document.getElementById('color-picker').value;
+            
+            if (!lakeId) return;
+            
+            // Update on server
+            fetch('/update_lake_color', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ lake_id: lakeId, color: color })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update the polygon color
+                    lakePolygons[lakeId].setOptions({
+                        strokeColor: color,
+                        fillColor: color
+                    });
+                }
+            });
+        });
+    </script>
+    <!-- Replace with your actual Google Maps API key -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAPXRkKFi88KTauhfbeMteYi4ZdxEm4wu4&callback=initMap" async defer></script>
+</body>
+</html>
