@@ -1,112 +1,179 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Lake Color Map</title>
+    <title>Toxic Lake Monitor</title>
     <style>
         #map {
             height: 600px;
             width: 100%;
         }
-        .color-picker {
+        .control-panel {
             position: absolute;
             top: 10px;
             left: 10px;
             z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            background: rgba(255, 200, 200, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            width: 250px;
+        }
+        select, button {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button.clean-btn {
+            background-color: #4285F4;
+        }
+        h3 {
+            margin-top: 0;
+            color: #d32f2f;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <div class="color-picker">
-        <h3>Lake Color Tool</h3>
+    <div class="control-panel">
+        <h3>Poisoned Lake Monitor</h3>
         <select id="lake-selector">
             <option value="">Select a lake</option>
         </select>
-        <input type="color" id="color-picker" value="#0000FF">
-        <button id="apply-color">Apply Color</button>
+        <button id="mark-poisoned">Mark as Poisoned</button>
+        <button id="mark-clean" class="clean-btn">Mark as Clean</button>
     </div>
 
     <script>
         let map;
-        let lakes = {};
-        let lakePolygons = {};
+        let lakeCircles = {};
 
         function initMap() {
-            // Center on North America
+            // Center on Great Lakes region
             map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 4,
-                center: { lat: 45.0, lng: -90.0 },
+                zoom: 7,
+                center: { lat: 42.5, lng: -85.0 },
             });
 
-            // Load lakes data
+            loadLakes();
+        }
+
+        function loadLakes() {
             fetch('/get_lakes')
                 .then(response => response.json())
                 .then(data => {
-                    lakes = data;
-                    renderLakes();
-                    populateLakeSelector();
+                    // Clear existing circles from map
+                    clearLakes();
+                    renderLakes(data);
+                    populateLakeSelector(data);
                 });
         }
 
-        function renderLakes() {
-            for (const [id, lake] of Object.entries(lakes)) {
-                const coordinates = lake.coordinates.map(coord => {
-                    return { lat: coord[0], lng: coord[1] };
-                });
-
-                lakePolygons[id] = new google.maps.Polygon({
-                    paths: coordinates,
-                    strokeColor: lake.color,
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillColor: lake.color,
-                    fillOpacity: 0.35,
-                    map: map
-                });
+        function clearLakes() {
+            // Remove all circles from map
+            for (const circle of Object.values(lakeCircles)) {
+                circle.setMap(null);
             }
+            lakeCircles = {};
         }
 
-        function populateLakeSelector() {
+        function populateLakeSelector(lakes) {
             const selector = document.getElementById('lake-selector');
+            
+            // Save current selection
+            const selectedValue = selector.value;
+            
+            // Clear all options except the first one
+            while (selector.options.length > 1) {
+                selector.remove(1);
+            }
+            
+            // Add current lakes
             for (const [id, lake] of Object.entries(lakes)) {
                 const option = document.createElement('option');
                 option.value = id;
                 option.textContent = lake.name;
                 selector.appendChild(option);
             }
+            
+            // Restore selection if it still exists
+            if (selectedValue && lakes[selectedValue]) {
+                selector.value = selectedValue;
+            }
         }
 
-        document.getElementById('apply-color').addEventListener('click', () => {
+        function renderLakes(lakes) {
+            for (const [id, lake] of Object.entries(lakes)) {
+                const isPoisoned = lake.status === "poisoned";
+                
+                lakeCircles[id] = new google.maps.Circle({
+                    strokeColor: isPoisoned ? "#FF0000" : "#4285F4",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: isPoisoned ? "#FF0000" : "#4285F4",
+                    fillOpacity: isPoisoned ? 0.35 : 0.2,
+                    map: map,
+                    center: { lat: lake.center[0], lng: lake.center[1] },
+                    radius: lake.radius
+                });
+
+                // Add label
+                new google.maps.Marker({
+                    position: { lat: lake.center[0], lng: lake.center[1] },
+                    map: map,
+                    label: {
+                        text: lake.name,
+                        color: isPoisoned ? "#FF0000" : "#4285F4",
+                        fontWeight: "bold"
+                    },
+                    icon: {
+                        url: "data:image/svg+xml;charset=UTF-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLW1hcC1waW4iPjxwYXRoIGQ9Ik0yMCAxMGMwIDYtOCAxMi04IDEycy04LTYtOC0xMmE4IDggMCAwIDEgMTYgMFoiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEwIiByPSIzIi8+PC9zdmc+",
+                        anchor: new google.maps.Point(12, 24)
+                    }
+                });
+            }
+        }
+
+        // function populateLakeSelector(lakes) {
+        //     const selector = document.getElementById('lake-selector');
+        //     for (const [id, lake] of Object.entries(lakes)) {
+        //         const option = document.createElement('option');
+        //         option.value = id;
+        //         option.textContent = lake.name;
+        //         selector.appendChild(option);
+        //     }
+        // }
+
+        function updateLakeStatus(status) {
             const lakeId = document.getElementById('lake-selector').value;
-            const color = document.getElementById('color-picker').value;
-            
             if (!lakeId) return;
-            
-            // Update on server
-            fetch('/update_lake_color', {
+
+            fetch('/update_lake_status', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ lake_id: lakeId, color: color })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    lake_id: lakeId, 
+                    status: status 
+                })
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    // Update the polygon color
-                    lakePolygons[lakeId].setOptions({
-                        strokeColor: color,
-                        fillColor: color
-                    });
+                if (data.status === "success") {
+                    loadLakes(); // Refresh the display
                 }
             });
-        });
+        }
+
+        document.getElementById('mark-poisoned').addEventListener('click', 
+            () => updateLakeStatus("poisoned"));
+        document.getElementById('mark-clean').addEventListener('click', 
+            () => updateLakeStatus("clean"));
     </script>
-    <!-- Replace with your actual Google Maps API key -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAPXRkKFi88KTauhfbeMteYi4ZdxEm4wu4&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ api_key }}&callback=initMap" async defer></script>
 </body>
 </html>
