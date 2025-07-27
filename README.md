@@ -15,6 +15,7 @@ A real-time web application for monitoring and classifying the toxicity of lakes
 ---
 
 ## 🗂️ Project Structure
+```
 .
 ├── app.py # Main Flask server
 ├── templates/
@@ -27,7 +28,7 @@ A real-time web application for monitoring and classifying the toxicity of lakes
 ├── .env # Contains GOOGLE_CLOUD_API=your_api_key
 ├── requirements.txt # Python dependencies
 └── README.md # You're reading it!
-
+```
 
 ---
 
