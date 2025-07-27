@@ -1,0 +1,11 @@
+id,name,latitude,longitude,radius,status
+ulsoor_lake,Ulsoor Lake,12.9777,77.6163,800,clean
+sankey_tank,Sankey Tank,12.9918,77.5734,600,clean
+bellandur_lake,Bellandur Lake,12.9259,77.6698,1200,poisoned
+varthur_lake,Varthur Lake,12.9408,77.7286,1000,poisoned
+hebbal_lake,Hebbal Lake,13.0399,77.5926,700,clean
+agara_lake,Agara Lake,12.9675,77.6406,500,clean
+madiwala_lake,Madiwala Lake,12.9158,77.6231,900,poisoned
+yelahanka_lake,Yelahanka Lake,13.1003,77.5964,600,clean
+kaikondrahalli_lake,Kaikondrahalli Lake,12.9014,77.6669,400,clean
+sarakki_lake,Sarakki Lake,12.8872,77.5808,550,poisoned
