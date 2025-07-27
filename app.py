@@ -18,11 +18,11 @@ api_key = os.getenv("GOOGLE_CLOUD_API")
 # ser = serial.Serial('COM5', 9600)
 # columns = ["temperature", "pH", "Norm_R", "Norm_G", "Norm_B", "turbidity"]
 # latest_data = pd.DataFrame(columns=columns)
-# model = joblib.load("color_tag_model.pkl")
-# le = joblib.load("label_encoder.pkl")
+# model = joblib.load("models/color_tag_model.pkl")
+# le = joblib.load("models/label_encoder.pkl")
 
 # --- Lake Status Setup ---
-def load_lakes_from_csv(path="lakes.csv"):
+def load_lakes_from_csv(path="data/lakes.csv"):
     df = pd.read_csv(path)
     lakes = {}
     for _, row in df.iterrows():
@@ -125,8 +125,6 @@ def randomize_lake_status():
                 })
             except Exception as e:
                 print(f"Failed to update status for {lake_id}: {e}")
-
-
 
 if __name__ == '__main__':
     # threading.Thread(target=randomize_lake_status, daemon=True).start()
